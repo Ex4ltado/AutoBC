@@ -7,6 +7,7 @@ import autobc.frame.Window
 import autobc.pages.Page
 import autobc.pages.menu.MenuPage
 import java.awt.Color
+import java.time.Duration
 import kotlin.concurrent.thread
 
 class WorkingPage : Page() {
@@ -23,53 +24,73 @@ class WorkingPage : Page() {
     private val backButton = Button("images/Global Buttons/button_back.png")
     private val newMapButton = Button("images/Mining Map/new_map.png")
 
-    private var timerRunning = false
+    private var isWorking = false
+    private var waitingHeroesSeconds = 0
+    private var afkSeconds = 0
 
     override fun action() {
 
-        Bot.isWorking = true
+        isWorking = true
         Window.log("Starting Work!", Color.GREEN)
 
-        thread {
-            timerRunning = true
-            while (timerRunning) {
+        thread(name = "WorkingThread") {
+            while (isWorking) {
                 Bot.runningSeconds++
+                afkSeconds++
+                if (Bot.isSomeoneSleeping) {
+                    waitingHeroesSeconds++
+                }
                 Thread.sleep(1000L)
             }
         }
 
         while (!Bot.isDisconnected) {
-            // Verify Error
+
+            // AFK For some minutes after some hours to prevent Bot Detection
+            if (afkSeconds >= Duration.ofHours(Bot.afkAfterHours.toLong()).seconds) {
+                Window.log("Staying AFK for ${Bot.afkTimeToWaitInMinutes} minutes")
+                Bot.sleep(Duration.ofMinutes(Bot.afkTimeToWaitInMinutes.toLong()).toMillis())
+                Bot.setNewAfkTime()
+                afkSeconds = 0
+            }
+
+            // Verify if is disconnected
             if (existsElement(errorMessage, exact = true, timeout = 0.0)) {
+                // Sleep some minutes to prevent Bot Detection
+                Bot.sleep(Duration.ofMinutes((1..3).random().toLong()).toMillis())
+                isWorking = false
                 moveMouseToElement(okButton, click = true)
-                timerRunning = false
-                Thread.sleep(1001L)
                 Bot.disconnected()
                 // Break And LogIn again
                 break
             }
 
-            moveMouseToElement(newMapButton, forever = false, click = true, timeout = 0.0) {
+            moveMouseToElement(newMapButton, forever = false, click = true, timeout = 0.0, bodyFind = {
                 Bot.mapsCompleted++
-                Window.log("+1 Map Completed", Color.GREEN)
-            }
+                Window.log("+1 Map Completed, Total = ${Bot.mapsCompleted}", Color.GREEN)
+            })
 
             // Verify Sleeping Heroes
             if (!Bot.isSomeoneSleeping) {
-                sleepingTicks.forEach {
-                    if (existsElement(it, forever = false, exact = false, timeout = 0.0)) {
-                        Window.log("Sleeping Hero Founded", Color.ORANGE)
+                for (sleepingImage in sleepingTicks) {
+                    if (existsElement(sleepingImage, forever = false, exact = false, timeout = 0.0)) {
                         Bot.isSomeoneSleeping = true
-                        return@forEach
+                        Window.log("Sleeping Hero Found", Color.ORANGE)
+                        Window.log("Waiting ${Bot.minutesToWaitHeroesSleeping} minutes to put Heroes to Work again")
+                        break
                     }
                 }
             } else {
-                if ((Bot.runningSeconds / 60) % Bot.minutesToWaitHeroesSleeping == 0) {
+                if (waitingHeroesSeconds >= Duration.ofMinutes(Bot.minutesToWaitHeroesSleeping.toLong()).seconds) {
                     moveMouseToElement(backButton, click = true)
                     Window.log("Back to Main Menu", Color.ORANGE)
                     MenuPage().action()
+                    waitingHeroesSeconds = 0
+                    Bot.isSomeoneSleeping = false
+                    Window.log("Starting Work Again", Color.GREEN)
                 }
             }
+
             Thread.sleep(500L)
         }
 

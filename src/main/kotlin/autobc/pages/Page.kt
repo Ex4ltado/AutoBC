@@ -1,5 +1,6 @@
 package autobc.pages
 
+import autobc.bot.Bot
 import autobc.elements.Element
 import autobc.robot.Mouse
 import autobc.util.SafeSikuli
@@ -14,10 +15,11 @@ abstract class Page {
         element: Element,
         forever: Boolean = false,
         exact: Boolean = true,
-        timeout: Double = 0.0
+        timeout: Double = 0.0,
+        maxTimeout: Double = Bot.MAX_TIMEOUT, // Only Used in Forever Action
     ): Boolean {
         if (forever) {
-            foreverAction {
+            foreverAction(maxTimeout) {
                 SafeSikuli.exists(screen, element.image, exact, timeout)!!
                 return true
             }
@@ -25,20 +27,25 @@ abstract class Page {
         return SafeSikuli.exists(screen, element.image) != null
     }
 
-    private fun findElement(element: Element, timeout: Double = 5.0): Point? {
+    private fun findElement(
+        element: Element,
+        exact: Boolean = false,
+        timeout: Double = 5.0
+    ): Point? {
         SafeSikuli.waitSafe(screen, element.image, timeout)
-        val find = SafeSikuli.findSafe(screen, element.image) ?: return null
+        val find = SafeSikuli.findSafe(screen, element.image, exact) ?: return null
         return Point(find.x, find.y)
     }
 
     fun foreverElementStepAction(
         elements: Array<Element>,
         minDelayBetweenActions: Long = 1000L,
-        maxDelayBetweenActions: Long = 2000L
+        maxDelayBetweenActions: Long = 2000L,
+        exact: Boolean = false,
     ) {
         elements.forEach {
             val delayBetweenActions = (minDelayBetweenActions..maxDelayBetweenActions).random()
-            moveMouseToElement(it, forever = true, click = true)
+            moveMouseToElement(it, forever = true, exact = exact, click = true)
             Thread.sleep(delayBetweenActions)
         }
     }
@@ -47,29 +54,39 @@ abstract class Page {
         element: Element,
         randomPosition: Boolean = true,
         forever: Boolean = true,
+        exact: Boolean = false,
         click: Boolean = false,
         timeout: Double = 5.0,
-        body: (() -> Unit)? = null
+        maxTimeout: Double = Bot.MAX_TIMEOUT, // Only Used in Forever Action
+        bodyFind: (() -> Unit)? = null,
+        bodyNotFind: () -> Unit = Bot::restart,
     ) {
-        var elementPosition: Point? = Point()
+        var elementPosition: Point? = null
         if (forever) {
-            foreverAction {
-                elementPosition!!.location = findElement(element, timeout) ?: throw Exception()
+            foreverAction(maxTimeout) {
+                elementPosition = findElement(element, exact, timeout)!!
+            }
+            if (elementPosition == null) {
+                bodyNotFind()
+                return
             }
         } else {
-            elementPosition = findElement(element, timeout)
+            elementPosition = findElement(element, exact, timeout)
         }
         if (elementPosition != null) {
             val bounds = element.getBounds()
-            if (randomPosition) Mouse.moveMouse(elementPosition, bounds[0], bounds[1]) else Mouse.moveMouse(
-                elementPosition
+            if (randomPosition) {
+                Mouse.moveMouse(elementPosition!!, bounds[0], bounds[1])
+            } else Mouse.moveMouse(
+                elementPosition!!
             )
             if (click) Mouse.click()
-            body?.invoke()
+            bodyFind?.invoke()
         }
     }
 
-    private inline fun foreverAction(body: () -> Unit) = retry { body() }
+    private inline fun foreverAction(maxTimeout: Double, body: () -> Unit) =
+        retry(maxDuration = maxTimeout) { body() }
 
     abstract fun action()
 

@@ -1,5 +1,6 @@
 package autobc.pages.login
 
+import autobc.bot.Bot
 import autobc.elements.button.Button
 import autobc.elements.message.Message
 import autobc.frame.Window
@@ -12,15 +13,17 @@ class LoginPage : Page() {
     private val buttonConnectWalletButton = Button("images/Login/button_connect_wallet.png")
     private val buttonConnectMetamask = Button("images/Login/button_fox.png")
 
-    private val buttonAssinarMetamask = Button("images/Login/button_assinar.png")
+    private val buttonAssignMetamask = Button("images/Login/button_assign.png")
 
     private val metamaskMessage = Message("images/Login/metamask_login_message.png")
 
     private fun connectMetamaskWallet() {
         Window.log("Trying Connect to Metamask Wallet", Color.ORANGE)
         existsElement(metamaskMessage, forever = true, exact = false, timeout = 2.0)
-        Keyboard.maximizeShortcut()
-        moveMouseToElement(buttonAssinarMetamask, click = true)
+        if (!Bot.isOnLinux()) {
+            Keyboard.maximizeShortcut()
+        }
+        moveMouseToElement(buttonAssignMetamask, click = true)
         Window.log("Logged to Metamask Wallet", Color.GREEN)
     }
 
@@ -29,6 +32,7 @@ class LoginPage : Page() {
         foreverElementStepAction(arrayOf(buttonConnectWalletButton, buttonConnectMetamask))
         connectMetamaskWallet()
         Window.log("Login Successful", Color.GREEN)
+        Bot.isDisconnected = false
     }
 
     override fun action() {

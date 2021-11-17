@@ -1,13 +1,17 @@
 package autobc.robot
 
 import autobc.util.Direction
+import com.github.joonasvali.naturalmouse.api.MouseMotion
 import com.github.joonasvali.naturalmouse.api.MouseMotionFactory
+import com.github.joonasvali.naturalmouse.util.FactoryTemplates
 import java.awt.Point
 import java.awt.Robot
 import java.awt.event.InputEvent
 
 
 object Mouse {
+
+    var motionFactory: MouseMotionFactory = FactoryTemplates.createFastGamerMotionFactory()
 
     private val robot = Robot()
 
@@ -39,7 +43,7 @@ object Mouse {
     }
 
     private fun mouseSmooth(x: Int, y: Int) {
-        MouseMotionFactory.getDefault().move(x, y)
+        motionFactory.move(x, y)
     }
 
     /*private fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000) {

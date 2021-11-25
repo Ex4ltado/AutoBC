@@ -12,7 +12,7 @@ object SafeSikuli {
         }
     }
 
-    fun <PSI> waitSafe(sikuli: Screen, target: PSI, timeout: Double = 3.0): Match? {
+    fun waitSafe(sikuli: Screen, target: Image, timeout: Double = 3.0): Match? {
         return try {
             sikuli.wait(target, timeout)
         } catch (e: FindFailed) {

@@ -19,18 +19,17 @@ class WorkingPage : Page() {
         Button("images/Mining Map/sleeping/4_tick_sleeping_hero.png")
     )
 
-    private val errorMessage = Message("images/Errors/error_popup.png")
-    private val okButton = Button("images/Global Buttons/button_ok.png")
     private val backButton = Button("images/Global Buttons/button_back.png")
+    private val errorMessage = Message("images/Errors/error_popup.png")
     private val newMapButton = Button("images/Mining Map/new_map.png")
-
-    private var isWorking = false
-    private var waitingHeroesSeconds = 0
+    private val okButton = Button("images/Global Buttons/button_ok.png")
     private var afkSeconds = 0
+    private var isWorking = false
 
     override fun action() {
 
         isWorking = true
+        var waitingHeroesSeconds = 0
         Window.log("Starting Work!", Color.GREEN)
 
         thread(name = "WorkingThread") {
@@ -46,18 +45,19 @@ class WorkingPage : Page() {
 
         while (!Bot.isDisconnected) {
 
-            // AFK For some minutes after some hours to prevent Bot Detection
-            if (afkSeconds >= Duration.ofHours(Bot.afkAfterHours.toLong()).seconds) {
+            // AFK For some minutes after some hours running to prevent Bot Detection
+            if (afkSeconds >= Bot.afkAfterHours * 60 * 60) {
                 Window.log("Staying AFK for ${Bot.afkTimeToWaitInMinutes} minutes")
+                Bot.isAFK = true
                 Bot.sleep(Duration.ofMinutes(Bot.afkTimeToWaitInMinutes.toLong()).toMillis())
-                Bot.setNewAfkTime()
+                Bot.setAfkTime()
                 afkSeconds = 0
             }
 
             // Verify if is disconnected
             if (existsElement(errorMessage, exact = true, timeout = 0.0)) {
                 // Sleep some minutes to prevent Bot Detection
-                Bot.sleep(Duration.ofMinutes((1..3).random().toLong()).toMillis())
+                Bot.sleep(Duration.ofMinutes((2..5).random().toLong()).toMillis())
                 isWorking = false
                 moveMouseToElement(okButton, click = true)
                 Bot.disconnected()
@@ -71,7 +71,17 @@ class WorkingPage : Page() {
             })
 
             // Verify Sleeping Heroes
-            if (!Bot.isSomeoneSleeping) {
+            if (Bot.isSomeoneSleeping) {
+                if (waitingHeroesSeconds >= Bot.minutesToWaitHeroesSleeping * 60) {
+                    Window.log("Trying put heroes to Work again", Color.ORANGE)
+                    moveMouseToElement(backButton, click = true)
+                    Bot.isSomeoneSleeping = false
+                    waitingHeroesSeconds = 0
+                    MenuPage().action()
+                    Bot.setSleepTime()
+                    Window.log("Starting Work Again", Color.GREEN)
+                }
+            } else {
                 for (sleepingImage in sleepingTicks) {
                     if (existsElement(sleepingImage, forever = false, exact = false, timeout = 0.0)) {
                         Bot.isSomeoneSleeping = true
@@ -79,15 +89,6 @@ class WorkingPage : Page() {
                         Window.log("Waiting ${Bot.minutesToWaitHeroesSleeping} minutes to put Heroes to Work again")
                         break
                     }
-                }
-            } else {
-                if (waitingHeroesSeconds >= Duration.ofMinutes(Bot.minutesToWaitHeroesSleeping.toLong()).seconds) {
-                    moveMouseToElement(backButton, click = true)
-                    Window.log("Back to Main Menu", Color.ORANGE)
-                    MenuPage().action()
-                    waitingHeroesSeconds = 0
-                    Bot.isSomeoneSleeping = false
-                    Window.log("Starting Work Again", Color.GREEN)
                 }
             }
 

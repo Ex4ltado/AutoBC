@@ -2,10 +2,13 @@ package autobc.pages
 
 import autobc.bot.Bot
 import autobc.elements.Element
+import autobc.frame.Window
 import autobc.robot.Mouse
 import autobc.util.SafeSikuli
 import autobc.util.retry
+import org.sikuli.script.Match
 import org.sikuli.script.Screen
+import java.awt.Color
 import java.awt.Point
 
 abstract class Page {
@@ -27,14 +30,13 @@ abstract class Page {
         return SafeSikuli.exists(screen, element.image) != null
     }
 
-    private fun findElement(
+    fun findElement(
         element: Element,
         exact: Boolean = false,
         timeout: Double = 5.0
-    ): Point? {
+    ): Match? {
         SafeSikuli.waitSafe(screen, element.image, timeout)
-        val find = SafeSikuli.findSafe(screen, element.image, exact) ?: return null
-        return Point(find.x, find.y)
+        return SafeSikuli.findSafe(screen, element.image, exact)
     }
 
     fun foreverElementStepAction(
@@ -50,7 +52,7 @@ abstract class Page {
         }
     }
 
-    fun moveMouseToElement(
+    inline fun moveMouseToElement(
         element: Element,
         randomPosition: Boolean = true,
         forever: Boolean = true,
@@ -58,34 +60,36 @@ abstract class Page {
         click: Boolean = false,
         timeout: Double = 5.0,
         maxTimeout: Double = Bot.MAX_TIMEOUT, // Only Used in Forever Action
-        bodyFind: (() -> Unit)? = null,
+        bodyFind: () -> Unit = {},
         bodyNotFind: () -> Unit = Bot::restart,
     ) {
-        var elementPosition: Point? = null
+        var elementMatch: Match? = null
         if (forever) {
             foreverAction(maxTimeout) {
-                elementPosition = findElement(element, exact, timeout)!!
+                elementMatch = findElement(element, exact, timeout)!!
             }
-            if (elementPosition == null) {
+            if (elementMatch == null) {
+                Window.log("Failed to find ${element.name}", Color.RED)
                 bodyNotFind()
                 return
             }
         } else {
-            elementPosition = findElement(element, exact, timeout)
+            elementMatch = findElement(element, exact, timeout)
         }
-        if (elementPosition != null) {
+        if (elementMatch != null) {
             val bounds = element.getBounds()
+            val elementPosition = Point(elementMatch!!.x, elementMatch!!.y)
             if (randomPosition) {
-                Mouse.moveMouse(elementPosition!!, bounds[0], bounds[1])
-            } else Mouse.moveMouse(
-                elementPosition!!
-            )
+                Mouse.moveMouse(elementPosition, bounds[0], bounds[1])
+            } else {
+                Mouse.moveMouse(elementPosition)
+            }
             if (click) Mouse.click()
-            bodyFind?.invoke()
+            bodyFind()
         }
     }
 
-    private inline fun foreverAction(maxTimeout: Double, body: () -> Unit) =
+    inline fun foreverAction(maxTimeout: Double, body: () -> Unit) =
         retry(maxDuration = maxTimeout) { body() }
 
     abstract fun action()

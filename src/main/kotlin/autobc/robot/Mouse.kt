@@ -1,7 +1,6 @@
 package autobc.robot
 
 import autobc.util.Direction
-import com.github.joonasvali.naturalmouse.api.MouseMotion
 import com.github.joonasvali.naturalmouse.api.MouseMotionFactory
 import com.github.joonasvali.naturalmouse.util.FactoryTemplates
 import java.awt.Point
@@ -11,20 +10,18 @@ import java.awt.event.InputEvent
 
 object Mouse {
 
-    var motionFactory: MouseMotionFactory = FactoryTemplates.createFastGamerMotionFactory()
+    private var mouseMotionFactory: MouseMotionFactory = FactoryTemplates.createFastGamerMotionFactory()
 
-    private val robot = Robot()
+    private val robot = Robot().also { it.autoDelay = 0 }
 
     fun click() {
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
-        Thread.sleep(30L)
+        //Thread.sleep(100L) // 30
         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
     }
 
     fun clickAndSleep(millis: Long) {
-        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
-        Thread.sleep(30L)
-        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+        click()
         Thread.sleep(millis)
     }
 
@@ -43,7 +40,7 @@ object Mouse {
     }
 
     private fun mouseSmooth(x: Int, y: Int) {
-        motionFactory.move(x, y)
+        mouseMotionFactory.move(x, y)
     }
 
     /*private fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000) {
@@ -76,6 +73,22 @@ object Mouse {
         for (i in 0..scrolls) {
             robot.mouseWheel(wheelAmt)
             Thread.sleep(50)
+        }
+    }
+
+    fun scrollWithSteps(direction: Direction, force: Int = 2, scrolls: Int = 10, action: () -> Unit) {
+        val wheelAmt = when (direction) {
+            Direction.UP -> {
+                -force
+            }
+            Direction.DOWN -> {
+                force
+            }
+        }
+        for (i in 0..scrolls) {
+            robot.mouseWheel(wheelAmt)
+            Thread.sleep(50)
+            action()
         }
     }
 

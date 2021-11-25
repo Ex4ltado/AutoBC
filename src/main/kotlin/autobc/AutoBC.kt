@@ -3,7 +3,6 @@ package autobc
 import autobc.bot.Bot
 import org.sikuli.basics.Debug
 import org.sikuli.basics.Settings
-import java.util.*
 
 fun main() {
     Debug.off()

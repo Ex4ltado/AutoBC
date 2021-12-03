@@ -3,9 +3,11 @@ package autobc.robot
 import autobc.util.Direction
 import com.github.joonasvali.naturalmouse.api.MouseMotionFactory
 import com.github.joonasvali.naturalmouse.util.FactoryTemplates
+import java.awt.MouseInfo
 import java.awt.Point
 import java.awt.Robot
 import java.awt.event.InputEvent
+import kotlin.math.sqrt
 
 
 object Mouse {
@@ -17,6 +19,14 @@ object Mouse {
     fun click() {
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
         //Thread.sleep(100L) // 30
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+    }
+
+    fun holdClick() {
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
+    }
+
+    fun releaseClick() {
         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
     }
 
@@ -43,13 +53,13 @@ object Mouse {
         mouseMotionFactory.move(x, y)
     }
 
-    /*private fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000) {
+    /*fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000, moveAction: () -> Unit) {
         val mousePosition = MouseInfo.getPointerInfo().location
         val point = Point(x, y)
         val a2b = point.distance(mousePosition)
         if (a2b == 0.0) return
         val sqa2b = sqrt(a2b)
-        val steps = sqa2b * 3
+        val steps = sqa2b * 5
         val dx = (x - mousePosition.x) / steps
         val dy = (y - mousePosition.y) / steps
         val dt = smooth / steps
@@ -57,9 +67,32 @@ object Mouse {
         while (step < steps) {
             Thread.sleep(dt.toLong())
             robot.mouseMove((mousePosition.x + dx * step).toInt(), (mousePosition.y + dy * step).toInt())
+            moveAction()
             step++
         }
     }*/
+
+    fun mouseSmooth(x: Int, y: Int, minSteps: Double = 10.0, smooth: Int = 1000, moveCondition: () -> Boolean) {
+        val mousePosition = MouseInfo.getPointerInfo().location
+        val point = Point(x, y)
+        val a2b = point.distance(mousePosition)
+        if (a2b == 0.0) return
+        val sqa2b = sqrt(a2b)
+        val steps = sqa2b * minSteps
+        val dx = (x - mousePosition.x) / steps
+        val dy = (y - mousePosition.y) / steps
+        val dt = smooth / steps
+        var step = 1.0
+        while (step < steps) {
+            if (moveCondition()) {
+                Thread.sleep(dt.toLong())
+                robot.mouseMove((mousePosition.x + dx * step).toInt(), (mousePosition.y + dy * step).toInt())
+                step++
+            } else {
+                break
+            }
+        }
+    }
 
     fun scroll(direction: Direction, force: Int = 2, scrolls: Int = 10) {
         val wheelAmt = when (direction) {

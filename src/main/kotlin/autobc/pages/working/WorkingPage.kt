@@ -26,10 +26,23 @@ class WorkingPage : Page() {
     private var afkSeconds = 0
     private var isWorking = false
 
+
+    /**
+     * Prevent chest closed - In rare cases in maps missing 1 chest AutoBC can't detect Sleeping Heroes
+     * and causing a Loop with Sleeping Heroes surrounding the last chest
+     */
+    private fun preventChestClosed() {
+        val buttonMine = Button("images/Menu/button_mine.png")
+        foreverElementStepAction(arrayOf(backButton, buttonMine), exact = true)
+    }
+
     override fun action() {
 
         isWorking = true
         var waitingHeroesSeconds = 0
+        var preventChestClosedSeconds = 0
+        var minutesToTriggerPreventChestClosed = (30..40).random()
+
         Window.log("Starting Work!", Color.GREEN)
 
         thread(name = "WorkingThread") {
@@ -38,6 +51,8 @@ class WorkingPage : Page() {
                 afkSeconds++
                 if (Bot.isSomeoneSleeping) {
                     waitingHeroesSeconds++
+                } else {
+                    preventChestClosedSeconds++
                 }
                 Thread.sleep(1000L)
             }
@@ -68,7 +83,14 @@ class WorkingPage : Page() {
             moveMouseToElement(newMapButton, forever = false, click = true, timeout = 0.0, bodyFind = {
                 Bot.mapsCompleted++
                 Window.log("+1 Map Completed, Total = ${Bot.mapsCompleted}", Color.GREEN)
+                detectCaptcha()
             })
+
+            if (preventChestClosedSeconds >= minutesToTriggerPreventChestClosed * 60) {
+                preventChestClosed()
+                preventChestClosedSeconds = 0
+                minutesToTriggerPreventChestClosed = (30..40).random()
+            }
 
             // Verify Sleeping Heroes
             if (Bot.isSomeoneSleeping) {

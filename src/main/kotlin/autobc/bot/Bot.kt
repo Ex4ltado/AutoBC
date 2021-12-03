@@ -46,6 +46,7 @@ object Bot {
         loadConfiguration()
         EventQueue.invokeLater { Window.create() }
         getBrowserWindow()
+        Window.log("Created By GabrielWar#2716", Color.CYAN)
         loop()
     }
 

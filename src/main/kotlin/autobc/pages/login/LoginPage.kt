@@ -19,11 +19,11 @@ class LoginPage : Page() {
 
     private fun connectMetamaskWallet() {
         Window.log("Trying Connect to Metamask Wallet", Color.ORANGE)
-        if (existsElement(metamaskLoginForm, timeout = 5.0)) {
+        /*if (existsElement(metamaskLoginForm, timeout = 5.0)) {
             Keyboard.type(Bot.METAMASK_PASSWORD)
             Thread.sleep(500L)
             Keyboard.pressEnter()
-        }
+        }*/
         existsElement(metamaskMessage, forever = true, exact = false, timeout = 2.0)
         if (!Bot.isOnLinux()) Keyboard.maximizeShortcut()
         moveMouseToElement(buttonAssignMetamask, click = true)
@@ -32,7 +32,9 @@ class LoginPage : Page() {
 
     private fun login() {
         Window.log("Trying Login", Color.ORANGE)
-        foreverElementStepAction(arrayOf(buttonConnectWalletButton, buttonConnectMetamask))
+        moveMouseToElement(buttonConnectWalletButton, forever = true, click = true)
+        detectCaptcha()
+        //foreverElementStepAction(arrayOf(buttonConnectWalletButton, buttonConnectMetamask))
         connectMetamaskWallet()
         Window.log("Login Successful", Color.GREEN)
         Bot.isDisconnected = false

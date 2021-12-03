@@ -27,6 +27,7 @@ class MenuPage : Page() {
         // Check Heroes
         Window.log("Waiting Heroes List", Color.ORANGE)
         moveMouseToElement(buttonHeroesList, click = true)
+        detectCaptcha()
         Window.log("Opening Heroes List", Color.GREEN)
         Window.log("Scrolling...", Color.WHITE)
         moveMouseToElement(scrollPart, exact = true)
@@ -49,7 +50,7 @@ class MenuPage : Page() {
                 buttonPutHeroToWork,
                 randomPosition = true,
                 exact = true,
-                maxTimeout = (8000..10000).random().toDouble(),
+                maxTimeout = (5000..7000).random().toDouble(),
                 bodyNotFind = {
                     if (existsElement(errorOverloadedServerMessage, timeout = 1.0)) {
                         Window.log("Overloaded Server Message Found!", Color.ORANGE)

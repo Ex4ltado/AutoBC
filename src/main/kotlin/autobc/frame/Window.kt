@@ -20,7 +20,7 @@ object Window : JFrame("") {
         defaultCloseOperation = EXIT_ON_CLOSE
         size = Dimension(300, 300)
         preferredSize = Dimension(300, 300)
-        //isAlwaysOnTop = true
+        isAlwaysOnTop = true
         textArea.font = Font(Font.SANS_SERIF, Font.BOLD, 13)
         textArea.isEditable = false
         textArea.background = Color.BLACK

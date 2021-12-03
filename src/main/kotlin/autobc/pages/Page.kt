@@ -11,6 +11,7 @@ import autobc.util.ScreenUtil.findDifferencePercentage
 import autobc.util.retry
 import org.sikuli.basics.Settings
 import org.sikuli.script.Match
+import org.sikuli.script.Pattern
 import org.sikuli.script.Screen
 import java.awt.Color
 import java.awt.MouseInfo
@@ -100,24 +101,29 @@ abstract class Page {
 
     protected fun detectCaptcha(timeout: Double = Settings.AutoWaitTimeout.toDouble()) {
 
-        var found = false
-        for (attempt in 1..3) {
+        var attempt = 1
+        var smoothOffset = 0
+        while (true) {
+            Mouse.releaseClick()
 
             Window.log("Detecting Captcha...")
 
             val popupWidth = Image("images/Captcha/popup.png")
             val popupHeight = Image("images/Captcha/popup_height.png")
+            val slide = Element("images/Captcha/slide.png")
 
-            val popupWidthMatch = screen.exists(popupWidth.image, timeout)
-            val popupHeightMatch = screen.exists(popupHeight.image, timeout)
+            val popupWidthMatch = screen.exists(Pattern(popupWidth.image).exact(), timeout)
+            val popupHeightMatch = screen.exists(Pattern(popupHeight.image).exact(), timeout)
+            val slideMatch = screen.exists(Pattern(slide.image).similar(0.9), timeout)
 
-            if (popupWidthMatch != null && popupHeightMatch != null) {
+            if (popupWidthMatch != null && popupHeightMatch != null && slideMatch != null) {
 
-                moveMouseToElement(Element("images/Captcha/slide.png"))
+                moveMouseToElement(slide)
 
                 val popupCaptcha =
                     Rectangle(popupWidthMatch.x, popupWidthMatch.y, popupWidthMatch.w, popupHeightMatch.h)
 
+                var found = false
                 val moveCondition = {
                     val bufferedImage = ScreenUtil.printScreen(popupCaptcha)
                     Thread.sleep(1L)
@@ -137,29 +143,30 @@ abstract class Page {
                 Mouse.holdClick()
                 while (!found) {
                     var mousePos = MouseInfo.getPointerInfo().location
-                    val smooth = (8000..9000).random()
-                    val minSteps = 10.0
-                    Mouse.mouseSmooth(
-                        mousePos.x + width,
-                        mousePos.y,
-                        minSteps = minSteps,
-                        smooth = smooth,
-                        moveCondition = moveCondition
-                    )
+                    fun moveMouse(x: Int) {
+                        val smooth = (5000 + smoothOffset..7000 + smoothOffset).random()
+                        val minSteps = 3.0
+                        Mouse.mouseSmooth(
+                            x,
+                            mousePos.y,
+                            minSteps = minSteps,
+                            smooth = smooth,
+                            moveCondition = moveCondition
+                        )
+                        smoothOffset += 1000
+                    }
+                    moveMouse(mousePos.x + width)
                     mousePos = MouseInfo.getPointerInfo().location
-                    Mouse.mouseSmooth(
-                        mousePos.x - width,
-                        mousePos.y,
-                        minSteps = minSteps,
-                        smooth = smooth,
-                        moveCondition = moveCondition
-                    )
+                    moveMouse(mousePos.x - width)
                 }
-                Thread.sleep((600L..1000L).random())
-
+                Thread.sleep((1000L..1500L).random())
                 Mouse.releaseClick()
 
                 Window.log("Captcha Completed (Maybe)", Color.ORANGE)
+                smoothOffset += 1000
+                attempt++
+
+                Thread.sleep(2000L)
             } else {
                 Window.log("Captcha Not Found!", Color.GREEN)
                 break

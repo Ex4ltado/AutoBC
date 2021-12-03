@@ -15,7 +15,7 @@ object Mouse {
     private var mouseMotionFactory: MouseMotionFactory = FactoryTemplates.createFastGamerMotionFactory()
 
     private val robot = Robot().also { it.autoDelay = 0 }
-
+    
     fun click() {
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
         //Thread.sleep(100L) // 30
@@ -72,7 +72,7 @@ object Mouse {
         }
     }*/
 
-    fun mouseSmooth(x: Int, y: Int, minSteps: Double = 10.0, smooth: Int = 1000, moveCondition: () -> Boolean) {
+    fun mouseSmooth(x: Int, y: Int, minSteps: Double = 3.0, smooth: Int = 1000, moveCondition: () -> Boolean) {
         val mousePosition = MouseInfo.getPointerInfo().location
         val point = Point(x, y)
         val a2b = point.distance(mousePosition)
@@ -85,8 +85,8 @@ object Mouse {
         var step = 1.0
         while (step < steps) {
             if (moveCondition()) {
-                Thread.sleep(dt.toLong())
                 robot.mouseMove((mousePosition.x + dx * step).toInt(), (mousePosition.y + dy * step).toInt())
+                Thread.sleep(dt.toLong())
                 step++
             } else {
                 break

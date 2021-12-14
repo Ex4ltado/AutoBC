@@ -6,8 +6,8 @@ plugins {
     application
 }
 
-group = "me.joao.gabriel"
-version = "1.0-SNAPSHOT"
+group = "me.ex4ltado"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,6 @@ repositories {
 dependencies {
     implementation("com.sikulix:sikulixapi:2.0.5")
     implementation("com.github.joonasvali.naturalmouse:naturalmouse:2.0.3")
-    //implementation("io.github.marcoslimaqa:sikulifactory:1.1.1")
 }
 
 
@@ -39,5 +38,33 @@ application {
 tasks {
     shadowJar {
         archiveClassifier.set("")
+
+        doLast {
+            val name = "AutoBC $version"
+
+            val dir = file("build/$name/")
+            if (dir.exists()) {
+                dir.delete()
+            }
+            dir.mkdirs()
+
+            val jarName = "${name}.jar"
+
+            val jar = file(File(dir, jarName))
+            val allJar = file("build/libs/autobc-${version}.jar")
+            com.google.common.io.Files.copy(allJar, jar)
+
+            val config = file(File(dir, "config.properties"))
+            config.writeBytes(file("config.properties").readBytes())
+
+            val dirImages = file(File(dir, "images"))
+            val images = file("images")
+
+            dirImages.mkdirs()
+
+            org.apache.commons.io.FileUtils.copyDirectory(images, dirImages)
+        }
     }
+
+
 }

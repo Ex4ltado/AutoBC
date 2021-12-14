@@ -19,8 +19,7 @@ object SafeSikuli {
             return null
         }
     }
-
-    /* This method don't need to cast with Try because 'exists' don't Throw exceptions */
+    
     fun exists(sikuli: Screen, target: Image, exact: Boolean = true, timeout: Double = 3.0): Match? {
         return try {
             if (exact) sikuli.exists(Pattern(target).exact(), timeout) else sikuli.exists(target, timeout)

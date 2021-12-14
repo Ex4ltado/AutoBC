@@ -18,10 +18,7 @@ import kotlin.math.round
 object Bot {
 
     private const val PAGE_URI = "https://app.bombcrypto.io"
-    private val steps = arrayListOf(LoginPage(), MenuPage(), WorkingPage())
     private var browserWindow: Long = 0L
-    private var isRunning = false
-    private var isWorking = false
     private var MAX_AFK_HOURS = 8
     private var MAX_AFK_TIME_TO_WAIT_IN_MINUTES = 120
     private var MAX_MINUTES_TO_WAIT_HEROES_SLEEPING = 80
@@ -33,14 +30,24 @@ object Bot {
     var afkAfterHours = 5
     var afkTimeToWaitInMinutes = 80
     var BROWSER_PAGE_NAME: String = "Bombcrypto"
-    var isAFK = false
-    var isDisconnected = false
-    var isSomeoneSleeping = false
     var mapsCompleted: Int = 0
     var MAX_TIMEOUT: Double = (2.0 * 60.0) * 1000 // 2 Minutes
     var minutesToWaitHeroesSleeping = 45
     var ONLY_PUT_FULL_HEROES_TO_WORK = false
-    var runningSeconds = 1
+
+    @Volatile
+    private var isRunning = false
+
+    @Volatile
+    var isAFK = false
+
+    @Volatile
+    var isDisconnected = false
+
+    @Volatile
+    var isSomeoneSleeping = false
+
+    private val steps = arrayOf(LoginPage(), MenuPage(), WorkingPage())
 
     fun start() {
         loadConfiguration()
@@ -118,7 +125,6 @@ object Bot {
     fun disconnected() {
         Window.log("Disconnected...", Color.RED)
         isDisconnected = true
-        isWorking = false
         isSomeoneSleeping = false
         Thread.sleep(5000)
         //restart()

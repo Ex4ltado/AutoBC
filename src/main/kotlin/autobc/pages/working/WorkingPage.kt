@@ -23,17 +23,16 @@ class WorkingPage : Page() {
     private val errorMessage = Message("images/Errors/error_popup.png")
     private val newMapButton = Button("images/Mining Map/new_map.png")
     private val okButton = Button("images/Global Buttons/button_ok.png")
+
+    @Volatile
     private var afkSeconds = 0
+
+    @Volatile
     private var isWorking = false
 
-
-    /**
-     * Prevent chest closed - In rare cases in maps missing 1 chest AutoBC can't detect Sleeping Heroes
-     * and causing a Loop with Sleeping Heroes surrounding the last chest
-     */
     private fun preventChestClosed() {
         val buttonMine = Button("images/Menu/button_mine.png")
-        foreverElementStepAction(arrayOf(backButton, buttonMine), exact = true)
+        foreverElementStepAction(arrayOf(backButton, buttonMine))
     }
 
     override fun action() {
@@ -47,7 +46,6 @@ class WorkingPage : Page() {
 
         thread(name = "WorkingThread") {
             while (isWorking) {
-                Bot.runningSeconds++
                 afkSeconds++
                 if (Bot.isSomeoneSleeping) {
                     waitingHeroesSeconds++

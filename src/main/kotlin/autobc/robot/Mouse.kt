@@ -7,6 +7,10 @@ import java.awt.MouseInfo
 import java.awt.Point
 import java.awt.Robot
 import java.awt.event.InputEvent
+import java.lang.Math.toRadians
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.math.floor
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 
@@ -15,7 +19,7 @@ object Mouse {
     private var mouseMotionFactory: MouseMotionFactory = FactoryTemplates.createFastGamerMotionFactory()
 
     private val robot = Robot().also { it.autoDelay = 0 }
-    
+
     fun click() {
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
         //Thread.sleep(100L) // 30
@@ -53,7 +57,7 @@ object Mouse {
         mouseMotionFactory.move(x, y)
     }
 
-    /*fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000, moveAction: () -> Unit) {
+    fun mouseSmooth(x: Int, y: Int, smooth: Int = 1000) {
         val mousePosition = MouseInfo.getPointerInfo().location
         val point = Point(x, y)
         val a2b = point.distance(mousePosition)
@@ -67,10 +71,9 @@ object Mouse {
         while (step < steps) {
             Thread.sleep(dt.toLong())
             robot.mouseMove((mousePosition.x + dx * step).toInt(), (mousePosition.y + dy * step).toInt())
-            moveAction()
             step++
         }
-    }*/
+    }
 
     fun mouseSmooth(x: Int, y: Int, minSteps: Double = 3.0, smooth: Int = 1000, moveCondition: () -> Boolean) {
         val mousePosition = MouseInfo.getPointerInfo().location
@@ -94,7 +97,48 @@ object Mouse {
         }
     }
 
-    fun scroll(direction: Direction, force: Int = 2, scrolls: Int = 10) {
+
+    fun mouseSmoothHumanized(position: Point, minSteps: Double, smooth: Int, moveCondition: () -> Boolean) {
+        val mousePosition = MouseInfo.getPointerInfo().location
+
+        val distance = mousePosition.distance(position)
+        val sqrt = sqrt(distance)
+
+        val steps = sqrt * minSteps
+        val radSteps = toRadians(180 / steps)
+
+        val xOffset = (position.x - mousePosition.x) / steps
+        val yOffset = (position.y - mousePosition.y) / steps
+
+        var x = radSteps
+        var y = radSteps
+
+        var waviness = 2.8
+        if (distance < 120) waviness = 0.5
+
+        var multiplier = 1
+
+        val random = ThreadLocalRandom.current()
+        if (random.nextBoolean()) x *= floor(random.nextDouble() * waviness + 1)
+        if (random.nextBoolean()) y *= floor(random.nextDouble() * waviness + 1)
+        if (random.nextBoolean()) multiplier *= -1
+
+        val offset = random.nextDouble() * (1.6 + sqrt(steps)) + 6 + 2
+
+        val totalSteps = steps.toInt() + 2
+        for (i in 1..totalSteps) {
+            if (moveCondition()) {
+                val stepX = mousePosition.x + ((xOffset * i).toInt() + multiplier * (offset * sin(x * i)).toInt())
+                val stepY = mousePosition.y + ((yOffset * i).toInt() + multiplier * (offset * sin(y * i)).toInt())
+                robot.mouseMove(stepX, stepY)
+                Thread.sleep((smooth / totalSteps).toLong())
+            } else return
+        }
+
+        robot.mouseMove(position.x, position.y)
+    }
+
+    fun scroll(direction: Direction, force: Int = 1, scrolls: Int = 10) {
         val wheelAmt = when (direction) {
             Direction.UP -> {
                 -force

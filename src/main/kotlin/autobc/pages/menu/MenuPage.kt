@@ -31,7 +31,7 @@ class MenuPage : Page() {
         Window.log("Opening Heroes List", Color.GREEN)
         Window.log("Scrolling...", Color.WHITE)
         moveMouseToElement(scrollPart, exact = true)
-        Mouse.scroll(Direction.DOWN, scrolls = 60)
+        Mouse.scroll(Direction.DOWN, scrolls = (18..20).random())
 
         putHeroesToWork(Bot.ONLY_PUT_FULL_HEROES_TO_WORK)
 
